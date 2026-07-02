@@ -1,0 +1,2666 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Menu, X, HeartHandshake, BookOpen, Users, Calendar, Phone, ChevronRight, Star, Quote, ArrowRight, Clock, Video, Shield, ChevronDown, Scale, Compass, Wallet, GraduationCap, Heart, Lock, ShieldCheck, Book, ChevronLeft, LayoutGrid, CalendarDays, CheckCircle2, Share2, Facebook, Twitter, Search, Home, Play, Check, FileText, MonitorPlay, Award, Infinity, Sun, Moon, Bookmark } from 'lucide-react';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, getDay } from 'date-fns';
+import { articles, categoriesList } from './data/articles';
+
+// --- Components ---
+
+const Navbar = ({ onOpenUserProfile }: { onOpenUserProfile: () => void }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('');
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const isDarkMode = localStorage.getItem('theme') === 'dark' || 
+      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDark(isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    if (!isDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const sections = ['about', 'services', 'workshops', 'resources', 'booking'];
+      let current = '';
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const rect = element.getBoundingClientRect();
+          // Adjust threshold based on navbar height
+          if (rect.top <= 100 && rect.bottom >= 100) {
+            current = section;
+            break;
+          }
+        }
+      }
+      setActiveSection(current);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    handleScroll(); // Initial check
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    e.preventDefault();
+    setIsOpen(false);
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const yOffset = -80; // Navbar height offset
+      const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <>
+      <nav className="fixed w-full z-50 glass-panel transition-all duration-300">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="relative w-16 h-16 flex items-center justify-center cursor-pointer group shrink-0" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+              <HeartHandshake className="h-7 w-7 text-cyan-500 absolute z-10 group-hover:scale-110 transition-transform" />
+              <svg className="w-full h-full absolute animate-[spin_15s_linear_infinite]" viewBox="0 0 100 100">
+                <path id="circlePath" d="M 50, 50 m -34, 0 a 34,34 0 1,1 68,0 a 34,34 0 1,1 -68,0" fill="transparent" />
+                <text className="text-[14px] font-serif font-bold fill-red-500 uppercase">
+                  <textPath href="#circlePath" startOffset="0%" textLength="213" lengthAdjust="spacing">
+                    MAWADDAH • MAWADDAH • 
+                  </textPath>
+                </text>
+              </svg>
+            </div>
+            
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#about" onClick={(e) => handleNavClick(e, 'about')} className={`text-sm font-medium uppercase tracking-wider transition-colors ${activeSection === 'about' ? 'text-accent' : 'text-primary/80 hover:text-accent'}`}>About Us</a>
+              <a href="#services" onClick={(e) => handleNavClick(e, 'services')} className={`text-sm font-medium uppercase tracking-wider transition-colors ${activeSection === 'services' ? 'text-accent' : 'text-primary/80 hover:text-accent'}`}>Services</a>
+              <a href="#workshops" onClick={(e) => handleNavClick(e, 'workshops')} className={`text-sm font-medium uppercase tracking-wider transition-colors ${activeSection === 'workshops' ? 'text-accent' : 'text-primary/80 hover:text-accent'}`}>Workshops</a>
+              <a href="#resources" onClick={(e) => handleNavClick(e, 'resources')} className={`text-sm font-medium uppercase tracking-wider transition-colors ${activeSection === 'resources' ? 'text-accent' : 'text-primary/80 hover:text-accent'}`}>Resources</a>
+              <button onClick={onOpenUserProfile} className="text-primary/80 hover:text-accent transition-colors text-sm font-medium uppercase tracking-wider flex items-center gap-1"><Users className="w-4 h-4"/> Dashboard</button>
+              <button onClick={toggleTheme} className="text-primary/80 hover:text-accent transition-colors flex items-center justify-center" aria-label="Toggle Theme">
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="bg-primary text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-light transition-colors">
+                Book Consultation
+              </a>
+            </div>
+
+            <div className="md:hidden flex items-center gap-3">
+              <button onClick={toggleTheme} className="text-primary hover:text-accent transition-colors" aria-label="Toggle Theme">
+                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button onClick={() => setIsOpen(!isOpen)} className="text-primary">
+                {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile menu (Top dropdown for extra links) */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden bg-surface border-t border-accent/20"
+            >
+              <div className="px-4 pt-2 pb-6 space-y-1">
+                <a href="#about" onClick={(e) => handleNavClick(e, 'about')} className={`block px-3 py-3 text-base font-medium rounded-md ${activeSection === 'about' ? 'text-accent bg-accent/10' : 'text-primary hover:bg-accent/10'}`}>About Us</a>
+                <a href="#resources" onClick={(e) => handleNavClick(e, 'resources')} className={`block px-3 py-3 text-base font-medium rounded-md ${activeSection === 'resources' ? 'text-accent bg-accent/10' : 'text-primary hover:bg-accent/10'}`}>Resources</a>
+                <a href="#booking" onClick={(e) => handleNavClick(e, 'booking')} className="block px-3 py-3 text-base font-medium text-accent hover:bg-accent/10 rounded-md">Book Consultation</a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* Mobile Sticky Bottom Nav */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-panel border-t border-primary/10 flex justify-between items-center px-6 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))]">
+        <a href="#" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${!activeSection ? 'text-accent' : 'text-primary/60 hover:text-primary'}`}>
+          <Home className="w-6 h-6 mb-1" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Home</span>
+        </a>
+        <a href="#services" onClick={(e) => handleNavClick(e, 'services')} className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${activeSection === 'services' ? 'text-accent' : 'text-primary/60 hover:text-primary'}`}>
+          <HeartHandshake className="w-6 h-6 mb-1" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Services</span>
+        </a>
+        <a href="#workshops" onClick={(e) => handleNavClick(e, 'workshops')} className={`flex flex-col items-center justify-center p-2 rounded-xl transition-all ${activeSection === 'workshops' ? 'text-accent' : 'text-primary/60 hover:text-primary'}`}>
+          <BookOpen className="w-6 h-6 mb-1" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Workshops</span>
+        </a>
+        <button onClick={onOpenUserProfile} className="flex flex-col items-center justify-center p-2 rounded-xl transition-all text-primary/60 hover:text-primary">
+          <Users className="w-6 h-6 mb-1" />
+          <span className="text-[10px] font-bold uppercase tracking-wider">Dashboard</span>
+        </button>
+      </div>
+    </>
+  );
+};
+
+const Hero = () => {
+  return (
+    <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-bg/80 via-bg/50 to-bg z-10"></div>
+        <img 
+          src="https://images.unsplash.com/photo-1584553421349-3557471bed79?q=80&w=2069&auto=format&fit=crop" 
+          alt="Islamic Architecture" 
+          className="w-full h-full object-cover opacity-30"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="text-center max-w-3xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <span className="text-accent font-medium tracking-widest uppercase text-sm mb-4 block">Bismillah ir-Rahman ir-Rahim</span>
+            <h1 className="font-serif text-5xl md:text-7xl text-primary leading-tight mb-6 text-balance">
+              Nurturing Marriages Through <span className="italic text-accent">Faith & Wisdom</span>
+            </h1>
+            <p className="text-lg md:text-xl text-primary/80 mb-10 text-balance">
+              Expert Islamic marriage consultancy, pre-marital guidance, and parenting advice rooted in the Quran and Sunnah.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <a href="#booking" className="w-full sm:w-auto bg-primary text-bg px-8 py-4 rounded-full text-base font-medium hover:bg-primary-light transition-colors flex items-center justify-center gap-2">
+                Book 1:1 Consultation <ArrowRight className="w-4 h-4" />
+              </a>
+              <a href="#services" className="w-full sm:w-auto bg-transparent border border-primary text-primary px-8 py-4 rounded-full text-base font-medium hover:bg-primary/5 transition-colors flex items-center justify-center">
+                Explore Services
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const QuranicQuote = () => {
+  return (
+    <section className="py-16 bg-primary text-bg relative overflow-hidden">
+      <div className="absolute top-0 right-0 -mt-16 -mr-16 text-accent/10">
+        <Quote className="w-64 h-64 transform rotate-180" />
+      </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        <p className="font-serif text-2xl md:text-4xl leading-relaxed mb-8 italic text-balance">
+          "And among His signs is this, that He created for you mates from among yourselves, that ye may dwell in tranquility with them, and He has put love and mercy between your (hearts)..."
+        </p>
+        <div className="flex flex-col items-center justify-center">
+          <span className="text-accent font-medium tracking-widest uppercase text-sm">Surah Ar-Rum [30:21]</span>
+          <div className="w-12 h-px bg-accent mt-4"></div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const AboutUs = () => {
+  const values = [
+    {
+      icon: <Book className="w-8 h-8 text-accent" />,
+      title: "Faith-Based Guidance",
+      desc: "All our advice and guidance are strictly rooted in the Quran and the authentic Sunnah."
+    },
+    {
+      icon: <Heart className="w-8 h-8 text-accent" />,
+      title: "Compassion",
+      desc: "We approach every situation with empathy, understanding, and a non-judgmental heart."
+    },
+    {
+      icon: <ShieldCheck className="w-8 h-8 text-accent" />,
+      title: "Authenticity",
+      desc: "We provide honest, transparent, and sincere counsel tailored to your unique circumstances."
+    },
+    {
+      icon: <Lock className="w-8 h-8 text-accent" />,
+      title: "Confidentiality",
+      desc: "Your privacy is an Amanah (trust). All sessions are strictly confidential and secure."
+    }
+  ];
+
+  return (
+    <section id="about" className="py-24 bg-surface relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+        <div className="absolute -top-[10%] -right-[5%] w-[40%] h-[40%] rounded-full bg-accent/5 blur-[100px]"></div>
+        <div className="absolute top-[40%] -left-[10%] w-[50%] h-[50%] rounded-full bg-primary/5 blur-[120px]"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="text-center mb-20">
+          <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Discover Mawaddah</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-primary mb-6">About Us</h2>
+          <div className="w-24 h-1 bg-accent mx-auto rounded-full"></div>
+        </div>
+
+        {/* History & Founding Principles */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h3 className="font-serif text-3xl text-primary mb-6">Our History & Founding Principles</h3>
+            <div className="space-y-6 text-primary/80 text-lg leading-relaxed">
+              <p>
+                Mawaddah was born out of a profound realization: while the Muslim community continues to grow, the foundational unit of our society—the family—is facing unprecedented challenges. Founded by a group of dedicated scholars and advisors, our organization began as a small community initiative to address the rising rates of marital discord and generational disconnect.
+              </p>
+              <p>
+                Our founding principles are deeply rooted in the Quranic concept of <em>Mawaddah wa Rahmah</em> (Love and Mercy). We believe that every home has the potential to be a sanctuary of peace (Sakinah) when built upon the authentic teachings of the Prophet Muhammad ﷺ. We reject the notion that modern problems require abandoning traditional values; instead, we strive to apply timeless divine wisdom to contemporary challenges.
+              </p>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="relative"
+          >
+            <div className="aspect-[4/3] rounded-3xl overflow-hidden relative shadow-2xl">
+              <img 
+                src="https://images.unsplash.com/photo-1585036156171-384164a8c675?q=80&w=2000&auto=format&fit=crop" 
+                alt="Peaceful Islamic setting" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 p-8">
+                <Shield className="w-10 h-10 text-accent mb-4" />
+                <h4 className="font-serif text-2xl text-surface mb-2">Protecting the Next Generation</h4>
+                <p className="text-surface/80 text-sm">Through knowledge, patience, and adherence to the Sunnah.</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Vision & Mission */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="bg-bg p-10 rounded-3xl border border-primary/10 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Compass className="w-24 h-24 text-accent" />
+            </div>
+            <h3 className="font-serif text-2xl text-primary mb-4 relative z-10">Our Vision</h3>
+            <p className="text-primary/80 text-lg leading-relaxed relative z-10">
+              To see a global Muslim community where every marriage is a source of tranquility, every child is raised with a strong Islamic identity, and every home is a fortress against the spiritual and moral trials of the modern world. We envision a future where the prophetic model of family life is not just a historical ideal, but a lived reality.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="bg-primary text-surface p-10 rounded-3xl shadow-xl relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <HeartHandshake className="w-24 h-24 text-accent" />
+            </div>
+            <h3 className="font-serif text-2xl text-surface mb-4 relative z-10">Our Mission</h3>
+            <p className="text-surface/90 text-lg leading-relaxed relative z-10">
+              To equip individuals and couples with divine wisdom and practical tools <em>before</em> the storms hit. By bridging authentic Islamic scholarship from the Quran and Sunnah with practical guidance, we empower you to build resilient, God-conscious homes. Instead of testing and trying, our philosophy is simple: Learn and Implement.
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Core Values */}
+        <div>
+          <div className="text-center mb-12">
+            <h3 className="font-serif text-3xl text-primary">Our Core Values</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {values.map((value, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="bg-bg p-8 rounded-3xl border border-primary/5 text-center hover:border-accent/30 transition-colors shadow-sm"
+              >
+                <div className="w-16 h-16 mx-auto rounded-full bg-surface flex items-center justify-center mb-6 shadow-sm">
+                  {value.icon}
+                </div>
+                <h4 className="font-serif text-xl text-primary mb-3">{value.title}</h4>
+                <p className="text-primary/70 text-sm leading-relaxed">{value.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Services = () => {
+  const services = [
+    {
+      icon: <HeartHandshake className="w-8 h-8 text-accent" />,
+      title: "Pre-Marital Guidance",
+      desc: "Mindset development and compatibility assessment for those preparing for marriage."
+    },
+    {
+      icon: <Users className="w-8 h-8 text-accent" />,
+      title: "Couple Therapy",
+      desc: "Resolving conflicts and rebuilding connection through Islamic principles and modern psychology."
+    },
+    {
+      icon: <BookOpen className="w-8 h-8 text-accent" />,
+      title: "Parenting Guidance",
+      desc: "Tarbiyah strategies to raise righteous children in the modern world."
+    },
+    {
+      icon: <Phone className="w-8 h-8 text-accent" />,
+      title: "Mashwara & Advice",
+      desc: "General guidance on family matters, in-law relationships, and personal development."
+    },
+    {
+      icon: <Scale className="w-8 h-8 text-accent" />,
+      title: "Divorce & Mediation",
+      desc: "Navigating separation with dignity, fairness, and adherence to Islamic jurisprudence."
+    },
+    {
+      icon: <GraduationCap className="w-8 h-8 text-accent" />,
+      title: "Youth Mentorship",
+      desc: "Empowering young adults to navigate modern challenges while holding onto their faith."
+    },
+    {
+      icon: <Compass className="w-8 h-8 text-accent" />,
+      title: "Spiritual Coaching",
+      desc: "One-on-one sessions to help you reconnect with Allah and find purpose in your daily life."
+    },
+    {
+      icon: <Wallet className="w-8 h-8 text-accent" />,
+      title: "Financial Harmony",
+      desc: "Aligning your family's financial goals with Islamic principles of earning and spending."
+    }
+  ];
+
+  return (
+    <section id="services" className="py-24 bg-surface">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Our Expertise</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-primary">Comprehensive Support</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {services.map((service, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1 }}
+              className="bg-bg p-8 rounded-3xl border border-primary/5 hover:border-accent/30 transition-colors group"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-surface flex items-center justify-center mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                {service.icon}
+              </div>
+              <h3 className="font-serif text-xl text-primary mb-3">{service.title}</h3>
+              <p className="text-primary/70 text-sm leading-relaxed">{service.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const IslamicAdvice = () => {
+  return (
+    <section className="py-24 bg-surface relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+          className="text-center max-w-3xl mx-auto"
+        >
+          <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Our Approach</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-primary mb-6">Nasiha & Islamic Advice</h2>
+          <div className="bg-bg p-8 md:p-12 rounded-3xl border border-primary/5 shadow-sm text-left">
+            <p className="text-primary/80 text-lg leading-relaxed mb-6">
+              Please note that our consultations provide guidance based strictly on <strong>Islamic rulings and law (Shariah)</strong>. 
+            </p>
+            <p className="text-primary/80 text-lg leading-relaxed mb-6">
+              Our sessions are intended as sincere <em>Nasiha</em> (advice) to help you navigate life's challenges. We do not provide services related to psychology, neurology, or medical science.
+            </p>
+            <p className="text-primary/80 text-lg leading-relaxed mb-8">
+              Just feel free to open up in a safe, confidential environment. We are here to listen and will try our utmost to help and guide you in the best possible manner according to the Qur'an and Sunnah.
+            </p>
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-6 border-t border-primary/10 pt-8 mt-4">
+              <div className="flex items-center gap-2 text-sm text-primary/70 font-medium">
+                <Shield className="w-5 h-5 text-accent" />
+                Confidential
+              </div>
+              <div className="flex items-center gap-2 text-sm text-primary/70 font-medium">
+                <Book className="w-5 h-5 text-accent" />
+                Quran & Sunnah
+              </div>
+              <div className="flex items-center gap-2 text-sm text-primary/70 font-medium">
+                <Heart className="w-5 h-5 text-accent" />
+                Sincere Nasiha
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const Workshops = () => {
+  const [selectedWorkshop, setSelectedWorkshop] = useState<any | null>(null);
+  const [learningCourse, setLearningCourse] = useState<any | null>(null);
+  const [activeLecture, setActiveLecture] = useState({ section: 0, index: 0 });
+  const [viewMode, setViewMode] = useState<'grid' | 'calendar'>('grid');
+  const [currentMonth, setCurrentMonth] = useState(new Date(2026, 2, 1)); // Start at March 2026
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  const workshops = [
+    {
+      title: "The Fiqh of Marriage",
+      date: "Next Saturday, 10:00 AM",
+      dateObj: new Date(2026, 2, 14, 10, 0),
+      type: "Online Masterclass",
+      image: "https://images.unsplash.com/photo-1609599006353-e629aaab315f?q=80&w=2000&auto=format&fit=crop",
+      outline: ["Rights and Responsibilities", "The Marriage Contract (Nikah)", "Financial Obligations (Mahr & Nafaqah)", "Intimacy in Islam"],
+      expectedResults: "A comprehensive understanding of the legal and spiritual framework of an Islamic marriage, protecting you from common pitfalls.",
+      mindset: "Open to learning, ready to unlearn cultural misconceptions, and committed to following the Sunnah.",
+      price: "$49"
+    },
+    {
+      title: "Navigating the First Year",
+      date: "Starts Oct 15th",
+      dateObj: new Date(2026, 9, 15, 18, 0),
+      type: "4-Week Workshop",
+      image: "https://images.unsplash.com/photo-1564121211835-e88c852648ab?q=80&w=2000&auto=format&fit=crop",
+      outline: ["Managing Expectations", "Effective Communication", "Dealing with In-laws", "Establishing a God-conscious Home"],
+      expectedResults: "Practical tools to build a strong foundation of Mawaddah (affection) and Rahmah (mercy) during the critical first year.",
+      mindset: "Patience, empathy, and a willingness to compromise and grow together.",
+      price: "$149"
+    },
+    {
+      title: "Prophetic Parenting (Tarbiyah)",
+      date: "Nov 5th, 2:00 PM",
+      dateObj: new Date(2026, 10, 5, 14, 0),
+      type: "Weekend Seminar",
+      image: "https://images.unsplash.com/photo-1511895426328-dc8714191300?q=80&w=2000&auto=format&fit=crop",
+      outline: ["The Fitrah of a Child", "Discipline vs. Punishment", "Instilling Love for Allah", "Navigating Screen Time & Modern Challenges"],
+      expectedResults: "A clear, actionable parenting strategy modeled after the Prophet ﷺ's gentle and effective approach.",
+      mindset: "Self-reflective, gentle, and dedicated to being a positive role model.",
+      price: "$89"
+    },
+    {
+      title: "Conflict Resolution in Islam",
+      date: "Nov 20th, 6:00 PM",
+      dateObj: new Date(2026, 10, 20, 18, 0),
+      type: "Interactive Session",
+      image: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?q=80&w=2000&auto=format&fit=crop",
+      outline: ["The Etiquette of Disagreement", "Controlling Anger", "The Role of a Mediator", "Forgiveness and Moving Forward"],
+      expectedResults: "Mastery over emotional reactivity and the ability to resolve disputes without damaging the relationship.",
+      mindset: "Humble, ready to admit faults, and prioritizing peace over 'being right'.",
+      price: "$35"
+    },
+    {
+      title: "Financial Harmony in Marriage",
+      date: "Dec 2nd, 10:00 AM",
+      dateObj: new Date(2026, 11, 2, 10, 0),
+      type: "Online Masterclass",
+      image: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?q=80&w=2000&auto=format&fit=crop",
+      outline: ["Islamic Rights regarding Wealth", "Budgeting as a Couple", "Dealing with Debt", "Barakah in Earnings"],
+      expectedResults: "A unified financial plan that respects Islamic boundaries and eliminates money-related marital stress.",
+      mindset: "Transparent, responsible, and trusting in Allah's provision (Tawakkul).",
+      price: "$49"
+    },
+    {
+      title: "Healing from Trauma",
+      date: "Dec 15th, 4:00 PM",
+      dateObj: new Date(2026, 11, 15, 16, 0),
+      type: "Support Group & Workshop",
+      image: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?q=80&w=2000&auto=format&fit=crop",
+      outline: ["Understanding Trauma", "The Islamic Perspective on Hardship", "Coping Mechanisms", "Seeking Professional Help"],
+      expectedResults: "A safe space to begin the healing process, equipped with spiritual and psychological tools for recovery.",
+      mindset: "Courageous, vulnerable, and hopeful in Allah's mercy and healing.",
+      price: "$120"
+    },
+    {
+      title: "Preparing for Parenthood",
+      date: "Jan 10th, 11:00 AM",
+      dateObj: new Date(2027, 0, 10, 11, 0),
+      type: "4-Week Workshop",
+      image: "https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=2000&auto=format&fit=crop",
+      outline: ["Spiritual Preparation for Pregnancy", "Rights of the Newborn", "Maintaining the Marriage Post-Baby", "Building a Support System"],
+      expectedResults: "Confidence and spiritual readiness to welcome a new soul into your family.",
+      mindset: "Excited, prayerful, and ready to embrace a major life transition.",
+      price: "$149"
+    }
+  ];
+
+  const [confirmingWorkshop, setConfirmingWorkshop] = useState<any | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const handleBookNow = (e: React.MouseEvent, workshop: any) => {
+    e.stopPropagation();
+    setConfirmingWorkshop(workshop);
+  };
+
+  const confirmWorkshopBooking = () => {
+    if (!confirmingWorkshop) return;
+    
+    const formattedDate = format(confirmingWorkshop.dateObj, 'yyyy-MM-dd');
+    const formattedTime = format(confirmingWorkshop.dateObj, 'HH:mm');
+    
+    setShowConfirmation(true);
+    
+    setTimeout(() => {
+      const event = new CustomEvent('prefill-booking', { 
+        detail: { 
+          type: 'Workshop Registration', 
+          description: `I would like to register for the workshop: ${confirmingWorkshop.title}`,
+          date: formattedDate,
+          time: formattedTime
+        } 
+      });
+      window.dispatchEvent(event);
+      document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+      setSelectedWorkshop(null);
+      setConfirmingWorkshop(null);
+      setShowConfirmation(false);
+    }, 1500);
+  };
+
+  const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
+  const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
+
+  const daysInMonth = eachDayOfInterval({
+    start: startOfMonth(currentMonth),
+    end: endOfMonth(currentMonth)
+  });
+
+  const startingDayIndex = getDay(startOfMonth(currentMonth));
+
+  const filteredWorkshops = selectedDate 
+    ? workshops.filter(w => isSameDay(w.dateObj, selectedDate))
+    : workshops;
+
+  return (
+    <section id="workshops" className="py-24 bg-bg relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div>
+            <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Learn & Grow</span>
+            <h2 className="font-serif text-4xl md:text-5xl text-primary">Workshops & Events</h2>
+          </div>
+          <div className="flex items-center gap-2 bg-surface p-1.5 rounded-xl border border-primary/10">
+            <button 
+              onClick={() => { setViewMode('grid'); setSelectedDate(null); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${viewMode === 'grid' ? 'bg-primary text-bg' : 'text-primary/70 hover:text-primary'}`}
+            >
+              <LayoutGrid className="w-4 h-4" /> Grid
+            </button>
+            <button 
+              onClick={() => setViewMode('calendar')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${viewMode === 'calendar' ? 'bg-primary text-bg' : 'text-primary/70 hover:text-primary'}`}
+            >
+              <CalendarDays className="w-4 h-4" /> Calendar
+            </button>
+          </div>
+        </div>
+
+        {viewMode === 'calendar' && (
+          <div className="mb-12 bg-surface rounded-3xl p-6 md:p-8 border border-primary/10 shadow-sm max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="font-serif text-2xl text-primary">{format(currentMonth, 'MMMM yyyy')}</h3>
+              <div className="flex gap-2">
+                <button onClick={prevMonth} className="p-2 rounded-full hover:bg-primary/5 text-primary transition-colors">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={nextMonth} className="p-2 rounded-full hover:bg-primary/5 text-primary transition-colors">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-bold text-primary/50 uppercase tracking-wider py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-7 gap-2">
+              {Array.from({ length: startingDayIndex }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square rounded-xl bg-transparent"></div>
+              ))}
+              {daysInMonth.map((date, i) => {
+                const dayWorkshops = workshops.filter(w => isSameDay(w.dateObj, date));
+                const hasEvents = dayWorkshops.length > 0;
+                const isSelected = selectedDate && isSameDay(date, selectedDate);
+                
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDate(isSelected ? null : date)}
+                    className={`aspect-square rounded-xl flex flex-col items-center justify-center relative transition-all duration-200 
+                      ${isSelected ? 'bg-accent text-bg shadow-md' : hasEvents ? 'bg-accent/10 text-primary hover:bg-accent/20 border border-accent/20' : 'hover:bg-primary/5 text-primary'}
+                      ${hasEvents && !isSelected ? 'font-bold' : ''}
+                    `}
+                  >
+                    <span className="text-sm">{format(date, 'd')}</span>
+                    {hasEvents && (
+                      <div className="flex gap-1 mt-1">
+                        {dayWorkshops.map((_, idx) => (
+                          <div key={idx} className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-bg' : 'bg-accent'}`}></div>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            
+            {selectedDate && (
+              <div className="mt-8 pt-6 border-t border-primary/10 flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-primary/70">
+                    Showing events for {format(selectedDate, 'MMMM do, yyyy')}
+                  </span>
+                  <button 
+                    onClick={() => setSelectedDate(null)}
+                    className="text-xs font-bold text-accent uppercase tracking-wider hover:text-accent-light"
+                  >
+                    Clear Filter
+                  </button>
+                </div>
+                
+                {filteredWorkshops.length > 0 && (
+                  <div className="bg-bg rounded-2xl p-4 border border-primary/5 space-y-3">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary/50 mb-2">Available Workshops</h4>
+                    {filteredWorkshops.map((w, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-surface border border-primary/5 hover:border-accent/30 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0">
+                            <BookOpen className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <h5 className="font-serif text-primary text-sm font-medium">{w.title}</h5>
+                            <span className="text-xs text-primary/60 flex items-center gap-1"><Clock className="w-3 h-3" /> {w.time}</span>
+                          </div>
+                        </div>
+                        <span className="text-xs font-bold bg-primary/5 text-primary px-2 py-1 rounded-md">{w.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {filteredWorkshops.length === 0 ? (
+          <div className="text-center py-16 bg-surface rounded-3xl border border-primary/10">
+            <CalendarDays className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+            <h3 className="font-serif text-xl text-primary mb-2">No events scheduled</h3>
+            <p className="text-primary/60 text-sm">There are no workshops scheduled for this date.</p>
+            <button 
+              onClick={() => setSelectedDate(null)}
+              className="mt-6 text-accent font-medium hover:text-accent-light transition-colors"
+            >
+              View all upcoming events
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredWorkshops.map((workshop, idx) => (
+              <div 
+                key={idx} 
+                onClick={() => setSelectedWorkshop(workshop)}
+                className="group cursor-pointer rounded-3xl border border-primary/10 bg-surface shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 p-8 flex flex-col h-full relative overflow-hidden"
+              >
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-[100px] -z-10 transition-transform duration-500 group-hover:scale-[1.5]"></div>
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-accent-light scale-x-0 origin-left transition-transform duration-500 group-hover:scale-x-100"></div>
+                
+                <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                  <span className="bg-accent text-bg text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
+                    {workshop.type}
+                  </span>
+                  <span className="text-primary/70 text-sm flex items-center gap-1.5 font-medium px-3 py-1 rounded-full border border-primary/10 bg-bg/50">
+                    <Calendar className="w-4 h-4 text-accent" /> {workshop.date}
+                  </span>
+                </div>
+                
+                <div className="mb-4 relative">
+                  <h3 className="font-serif text-2xl text-primary leading-tight group-hover:text-accent transition-colors duration-300 pr-8">{workshop.title}</h3>
+                  <ArrowRight className="w-5 h-5 text-accent absolute top-1 right-0 opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                </div>
+
+                <p className="text-primary/60 text-sm mb-6 flex-grow leading-relaxed line-clamp-3">
+                  {workshop.expectedResults}
+                </p>
+                
+                <div className="flex flex-col gap-4 mt-auto pt-6 border-t border-primary/10">
+                   <div className="flex justify-between items-end">
+                     <div className="flex flex-col">
+                       <span className="text-xs text-primary/50 uppercase tracking-wider mb-0.5">Registration</span>
+                       <div className="text-2xl font-bold text-primary flex items-baseline gap-1">
+                        {workshop.price}
+                       </div>
+                     </div>
+                     <div className="flex gap-2">
+                       <button 
+                         onClick={(e) => { e.stopPropagation(); setSelectedWorkshop(workshop); }}
+                         className="bg-primary/5 hover:bg-primary/10 text-primary px-5 py-2.5 rounded-xl text-sm font-bold transition-colors"
+                       >
+                         Details
+                       </button>
+                       <button 
+                         onClick={(e) => handleBookNow(e, workshop)}
+                         className="bg-accent hover:bg-accent-light text-bg px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow hover:shadow-md transform active:scale-95"
+                       >
+                         Enroll
+                       </button>
+                     </div>
+                   </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Workshop Details Modal */}
+      <AnimatePresence>
+        {selectedWorkshop && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+          >
+            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm" onClick={() => setSelectedWorkshop(null)}></div>
+            <motion.div 
+              initial={{ y: 50, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className="bg-bg w-full max-w-5xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative z-10 flex flex-col"
+            >
+              <button 
+                onClick={() => setSelectedWorkshop(null)}
+                className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-primary/5 border border-primary/10 hover:bg-primary/10 flex items-center justify-center text-primary transition-colors shadow-sm"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              {/* Course Header / Hero Banner without Image */}
+              <div className="bg-primary text-bg p-8 md:p-16 relative overflow-hidden rounded-t-3xl">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-accent/20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3"></div>
+                <div className="relative z-10">
+                  <div className="flex flex-wrap gap-3 mb-6">
+                    <span className="bg-accent text-bg text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                      {selectedWorkshop.type}
+                    </span>
+                    <span className="bg-bg/20 backdrop-blur-sm text-bg text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1 border border-bg/20">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> 4.9 (120+ ratings)
+                    </span>
+                  </div>
+                  <h2 className="font-serif text-3xl md:text-5xl leading-tight mb-6 max-w-3xl">
+                    {selectedWorkshop.title}
+                  </h2>
+                  <p className="text-bg/80 text-lg max-w-2xl leading-relaxed">
+                    {selectedWorkshop.expectedResults}
+                  </p>
+                </div>
+              </div>
+
+              {/* Course Body bg-surface instead of bg-bg to contrast with header */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-6 md:p-12 z-20 relative bg-bg">
+                
+                {/* Main Content */}
+                <div className="lg:col-span-2 space-y-10">
+                  {/* What you'll learn */}
+                  <div className="bg-surface border border-primary/5 p-6 rounded-2xl">
+                    <h3 className="text-xl font-bold text-primary mb-4">What you'll learn</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedWorkshop.outline.map((item: string, i: number) => (
+                         <div key={i} className="flex gap-3 text-primary/80">
+                           <Check className="w-5 h-5 text-accent shrink-0" />
+                           <span className="text-sm">{item}</span>
+                         </div>
+                      ))}
+                      <div className="flex gap-3 text-primary/80">
+                        <Check className="w-5 h-5 text-accent shrink-0" />
+                        <span className="text-sm">Apply prophetic wisdom to modern challenges</span>
+                      </div>
+                      <div className="flex gap-3 text-primary/80">
+                        <Check className="w-5 h-5 text-accent shrink-0" />
+                        <span className="text-sm">Build stronger, spiritually grounded relationships</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Course Content / Curriculum */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-primary mb-4">Course Content</h3>
+                    <p className="text-sm text-primary/60 mb-4">{selectedWorkshop.outline.length} sections • {selectedWorkshop.outline.length * 2} modules • 4h 30m total length</p>
+                    <div className="border border-primary/10 rounded-2xl overflow-hidden bg-bg text-primary">
+                      {selectedWorkshop.outline.map((item: string, i: number) => (
+                        <details key={i} className={`group ${i !== selectedWorkshop.outline.length - 1 ? 'border-b border-primary/10' : ''}`} open={i === 0}>
+                          <summary className="cursor-pointer bg-surface/50 hover:bg-surface p-4 font-medium flex justify-between items-center transition-colors">
+                            <span className="flex items-center gap-3">
+                              <ChevronDown className="w-4 h-4 group-open:rotate-180 transition-transform" />
+                              Section {i + 1}: {item}
+                            </span>
+                            <span className="text-xs font-normal text-primary/60">2 lectures • 45m</span>
+                          </summary>
+                          <div className="p-4 bg-bg space-y-3">
+                            <div className="flex justify-between items-start text-sm text-primary/80 hover:text-accent cursor-pointer">
+                              <span className="flex items-center gap-3"><Play className="w-4 h-4 text-primary/40" /> Introduction to {item}</span>
+                              <span className="text-xs text-accent">Preview</span>
+                            </div>
+                            <div className="flex justify-between items-start text-sm text-primary/80 hover:text-accent cursor-pointer">
+                              <span className="flex items-center gap-3"><Play className="w-4 h-4 text-primary/40" /> Practical Applications</span>
+                              <span className="text-xs">25:00</span>
+                            </div>
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Requirements */}
+                  <div>
+                    <h3 className="text-2xl font-bold text-primary mb-4">Requirements & Mindset</h3>
+                    <ul className="list-disc list-inside text-primary/80 space-y-2">
+                       <li>{selectedWorkshop.mindset}</li>
+                       <li>Basic understanding of Islamic principles is helpful but not required.</li>
+                       <li>A notebook and pens for taking notes during interactive sessions.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Sidebar Widget (Sticky) */}
+                <div className="lg:col-span-1">
+                  <div className="sticky top-6 bg-surface border border-primary/10 rounded-3xl p-6 shadow-xl">
+                    <div className="text-4xl font-bold text-primary mb-2">
+                      {selectedWorkshop.price}
+                    </div>
+                    <div className="flex items-center gap-2 text-primary/60 text-sm mb-6">
+                      <Calendar className="w-4 h-4" /> Next Session: <strong className="text-primary">{selectedWorkshop.date}</strong>
+                    </div>
+
+                    {selectedWorkshop.title === "The Fiqh of Marriage" ? (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedWorkshop(null);
+                          setLearningCourse(selectedWorkshop);
+                        }}
+                        className="w-full bg-accent text-bg py-4 rounded-xl font-bold text-lg hover:bg-[#A88B63] transition-colors flex items-center justify-center gap-2 mb-4"
+                      >
+                        Access Course (Sample)
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={(e) => handleBookNow(e, selectedWorkshop)}
+                        className="w-full bg-accent text-bg py-4 rounded-xl font-bold text-lg hover:bg-[#A88B63] transition-colors flex items-center justify-center gap-2 mb-4"
+                      >
+                        Enroll Now
+                      </button>
+                    )}
+                    <p className="text-xs text-center text-primary/50 mb-6">30-Day Money-Back Guarantee</p>
+
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-primary text-sm uppercase tracking-wider mb-2">This course includes:</h4>
+                      <div className="flex items-center gap-3 text-sm text-primary/80"><MonitorPlay className="w-5 h-5 text-primary/40" /> 4 hours on-demand video</div>
+                      <div className="flex items-center gap-3 text-sm text-primary/80"><FileText className="w-5 h-5 text-primary/40" /> 12 downloadable resources</div>
+                      <div className="flex items-center gap-3 text-sm text-primary/80"><Infinity className="w-5 h-5 text-primary/40" /> Full lifetime access</div>
+                      <div className="flex items-center gap-3 text-sm text-primary/80"><Award className="w-5 h-5 text-primary/40" /> Certificate of completion</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Workshop Booking Confirmation Modal */}
+      <AnimatePresence>
+        {confirmingWorkshop && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4 sm:p-6"
+          >
+            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm" onClick={() => !showConfirmation && setConfirmingWorkshop(null)}></div>
+            <motion.div 
+              initial={{ y: 50, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className="bg-bg w-full max-w-md rounded-3xl shadow-2xl relative z-10 p-6 sm:p-8"
+            >
+              <h3 className="font-serif text-2xl text-primary mb-4">Confirm Registration</h3>
+              <p className="text-primary/80 mb-6">
+                You are about to register for:
+                <br />
+                <strong className="text-primary block mt-2 text-lg">{confirmingWorkshop.title}</strong>
+                <span className="text-sm text-primary/60 block mt-1">{confirmingWorkshop.date}</span>
+              </p>
+              
+              <AnimatePresence mode="wait">
+                {showConfirmation ? (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="bg-green-50 text-green-800 p-4 rounded-xl flex items-center justify-center gap-2 border border-green-200"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-medium">Confirmed! Redirecting...</span>
+                  </motion.div>
+                ) : (
+                  <motion.form 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="space-y-4"
+                    onSubmit={(e) => { e.preventDefault(); confirmWorkshopBooking(); }}
+                  >
+                    <div className="flex justify-between items-center py-3 border-b border-primary/10 mb-4">
+                      <span className="text-primary/70">Registration Fee</span>
+                      <span className="font-bold text-accent">{confirmingWorkshop.price}</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-wide text-primary/70 mb-1">Card Details (Simulation)</label>
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="0000 0000 0000 0000" 
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono"
+                          maxLength={19}
+                        />
+                        <div className="absolute right-3 top-3 flex gap-1">
+                          <div className="w-8 h-5 bg-red-400/20 rounded"></div>
+                          <div className="w-8 h-5 bg-yellow-400/20 rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <input type="text" placeholder="MM/YY" required className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono" maxLength={5} />
+                      </div>
+                      <div>
+                        <input type="text" placeholder="CVC" required className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono" maxLength={4} />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button 
+                        type="button"
+                        onClick={() => setConfirmingWorkshop(null)}
+                        className="flex-1 py-3 rounded-xl font-bold text-primary border border-primary/20 hover:bg-primary/5 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit"
+                        className="flex-1 bg-accent hover:bg-accent-light text-bg py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Lock className="w-4 h-4" /> Pay & Confirm
+                      </button>
+                    </div>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Course Learning Modal (Udemy Style) */}
+      <AnimatePresence>
+        {learningCourse && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-bg flex flex-col"
+          >
+            {/* Header */}
+            <div className="h-16 bg-primary text-bg flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
+              <div className="flex items-center gap-2 sm:gap-4 max-w-[70%]">
+                <button 
+                  onClick={() => setLearningCourse(null)}
+                  className="w-10 h-10 rounded-full hover:bg-bg/10 flex items-center justify-center transition-colors text-bg shrink-0"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <div className="border-l border-bg/20 pl-4 py-1 truncate">
+                  <h2 className="font-serif font-bold text-sm sm:text-lg truncate">{learningCourse.title}</h2>
+                </div>
+              </div>
+              <div className="flex items-center gap-4 text-sm font-medium">
+                <button className="hidden sm:flex bg-bg/10 hover:bg-bg/20 text-bg px-4 py-2 rounded-xl text-xs font-bold transition-colors items-center gap-2">
+                  <Share2 className="w-4 h-4" /> Share
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+              {/* Video Area */}
+              <div className="flex-1 bg-black flex flex-col relative z-10 w-full overflow-y-auto lg:overflow-hidden">
+                <div className="w-full aspect-video lg:flex-1 relative flex items-center justify-center bg-black shrink-0">
+                  <video 
+                    controls 
+                    className="w-full h-full object-contain"
+                    src={activeLecture.section === 0 && activeLecture.index === 0 ? "/The_Conquest_of_Khaybar.mp4" : undefined}
+                    poster={activeLecture.section === 0 && activeLecture.index === 0 ? undefined : learningCourse.image}
+                  >
+                     Your browser does not support the video tag.
+                  </video>
+                </div>
+                {/* Tabs */}
+                <div className="bg-bg h-auto lg:flex-1 lg:overflow-y-auto border-t border-primary/10 p-6 sm:p-10 text-primary">
+                  <h3 className="font-serif font-bold text-2xl sm:text-3xl mb-6">About this course</h3>
+                  <p className="text-primary/80 leading-relaxed mb-8 max-w-3xl text-lg">
+                    {learningCourse.expectedResults} {learningCourse.mindset}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 pb-8">
+                    <div>
+                      <span className="text-primary/50 text-sm uppercase tracking-wider font-bold block mb-3">By the numbers</span>
+                      <ul className="text-primary/80 space-y-2">
+                        <li>Skill level: All Levels</li>
+                        <li>Students: 2,140</li>
+                        <li>Languages: English</li>
+                        <li>Captions: Yes</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <span className="text-primary/50 text-sm uppercase tracking-wider font-bold block mb-3">Certificates</span>
+                      <p className="text-primary/80">Get Mawaddah certificate by completing entire course</p>
+                    </div>
+                    <div>
+                      <span className="text-primary/50 text-sm uppercase tracking-wider font-bold block mb-3">Features</span>
+                      <ul className="text-primary/80 space-y-2">
+                        <li>Available on iOS and Android</li>
+                        <li>Download resources</li>
+                        <li>Quizzes & Assignments</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sidebar Curriculum */}
+              <div className="w-full lg:w-[400px] bg-surface relative flex flex-col shrink-0 lg:h-full overflow-y-auto lg:overflow-hidden border-t xl:border-l lg:border-t-0 border-primary/10">
+                <div className="p-4 sm:p-6 border-b border-primary/10 font-bold text-primary flex justify-between items-center bg-surface sticky top-0 z-20">
+                  <h3 className="text-lg">Course Content</h3>
+                </div>
+                <div className="flex-1 lg:overflow-y-auto bg-bg">
+                  {learningCourse.outline.map((item: string, sectionIndex: number) => (
+                    <details 
+                      key={sectionIndex} 
+                      className="group border-b border-primary/10" 
+                      open={sectionIndex === activeLecture.section || window.innerWidth > 1024}
+                    >
+                      <summary className="cursor-pointer bg-surface/30 hover:bg-surface/60 p-4 sm:p-5 font-bold text-sm text-primary flex justify-between items-start transition-colors list-none">
+                        <div className="pr-4">
+                          <span className="text-base text-primary/90 font-serif">Section {sectionIndex + 1}: {item}</span>
+                          <span className="block text-xs font-normal text-primary/60 mt-1.5">
+                            0 / 2 | 45min
+                          </span>
+                        </div>
+                        <ChevronDown className="w-5 h-5 group-open:rotate-180 transition-transform text-primary/50 shrink-0 mt-0.5" />
+                      </summary>
+                      <div className="bg-bg">
+                        {[0, 1].map(lectureIndex => {
+                          const isActive = activeLecture.section === sectionIndex && activeLecture.index === lectureIndex;
+                          return (
+                            <button
+                              key={lectureIndex}
+                              onClick={() => setActiveLecture({ section: sectionIndex, index: lectureIndex })}
+                              className={`w-full text-left p-4 sm:p-5 pl-8 sm:pl-10 flex items-start gap-4 transition-colors ${isActive ? 'bg-accent/5' : 'hover:bg-primary/5'}`}
+                            >
+                              <div className="shrink-0 mt-0.5 relative pt-1">
+                                <input type="checkbox" className="w-4 h-4 rounded-sm border-primary/30 text-accent focus:ring-accent" />
+                              </div>
+                              <div className="flex-1 text-sm">
+                                <span className={isActive ? 'font-bold text-accent' : 'text-primary/80'}>
+                                  {lectureIndex === 0 ? "Introduction to " + item : "Discussion on " + item}
+                                </span>
+                                <span className={`flex items-center gap-1.5 text-xs mt-2 ${isActive ? 'text-accent/80' : 'text-primary/50'}`}>
+                                  <Play className="w-3.5 h-3.5" /> {lectureIndex === 0 ? '15:20' : '29:40'}
+                                </span>
+                              </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+};
+
+const Resources = () => {
+  const [selectedArticle, setSelectedArticle] = useState<typeof articles[0] | null>(null);
+  const [visibleCount, setVisibleCount] = useState(6);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hasFinishedReading, setHasFinishedReading] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [savedResourceIds, setSavedResourceIds] = useState<string[]>([]);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('mawaddah_saved_resources');
+    if (stored) {
+      setSavedResourceIds(JSON.parse(stored));
+    }
+    
+    const handleStorageChange = () => {
+      const updated = localStorage.getItem('mawaddah_saved_resources');
+      if (updated) {
+        setSavedResourceIds(JSON.parse(updated));
+      }
+    };
+    window.addEventListener('mawaddah_saved_resources_changed', handleStorageChange);
+    return () => window.removeEventListener('mawaddah_saved_resources_changed', handleStorageChange);
+  }, []);
+
+  const toggleSaveArticle = (e: React.MouseEvent, title: string) => {
+    e.stopPropagation();
+    let newSaved;
+    if (savedResourceIds.includes(title)) {
+      newSaved = savedResourceIds.filter(id => id !== title);
+    } else {
+      newSaved = [...savedResourceIds, title];
+    }
+    setSavedResourceIds(newSaved);
+    localStorage.setItem('mawaddah_saved_resources', JSON.stringify(newSaved));
+    window.dispatchEvent(new Event('mawaddah_saved_resources_changed'));
+  };
+
+  const filteredArticles = articles.filter(article => {
+    const matchesCategory = selectedCategory === 'All' || article.category === selectedCategory;
+    const matchesSearch = searchQuery === '' || 
+      article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      article.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [selectedCategory, searchQuery]);
+
+  useEffect(() => {
+    if (selectedArticle) {
+      setHasFinishedReading(false);
+      setScrollProgress(0);
+    }
+  }, [selectedArticle]);
+
+  const handleScroll = () => {
+    if (!scrollRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    
+    // Calculate progress
+    const maxScroll = scrollHeight - clientHeight;
+    const progress = maxScroll > 0 ? (scrollTop / maxScroll) * 100 : 0;
+    setScrollProgress(progress);
+
+    // Check if user has scrolled to bottom (with a small 10px buffer)
+    if (!hasFinishedReading && scrollTop + clientHeight >= scrollHeight - 10) {
+      setHasFinishedReading(true);
+    }
+  };
+
+  return (
+    <section id="resources" className="py-24 bg-surface relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+          <div className="lg:col-span-1">
+            <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Knowledge Hub</span>
+            <h2 className="font-serif text-4xl text-primary mb-6">Guidance from Quran & Sunnah</h2>
+            <p className="text-primary/70 mb-8">
+              Explore our library of articles, hadees explanations, and practical guides for building a stronger family life.
+            </p>
+            
+            <div className="relative mb-8">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-primary/40" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search articles, topics..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-primary/20 bg-bg focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+              />
+            </div>
+
+            <a 
+              href="#resources"
+              className="inline-flex items-center justify-center gap-2 bg-primary text-bg px-6 py-3 rounded-full text-sm font-medium hover:bg-primary-light transition-all duration-300 group"
+            >
+              <span>Browse All Resources</span>
+              <ArrowRight className="w-4 h-4 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
+            </a>
+          </div>
+          
+          <div className="lg:col-span-2">
+            <div className="flex flex-wrap gap-2 mb-8">
+              <button
+                onClick={() => setSelectedCategory('All')}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === 'All' ? 'bg-accent text-bg' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
+              >
+                All
+              </button>
+              {categoriesList.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedCategory === cat ? 'bg-accent text-bg' : 'bg-primary/5 text-primary hover:bg-primary/10'}`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-6">
+              {filteredArticles.length > 0 ? (
+                filteredArticles.slice(0, visibleCount).map((article, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => setSelectedArticle(article)}
+                    className="group block p-6 rounded-2xl border border-primary/10 hover:border-accent/50 hover:bg-bg transition-all cursor-pointer shadow-sm hover:shadow-md"
+                  >
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <span className="text-accent text-xs font-bold uppercase tracking-wider mb-2 block">{article.category}</span>
+                        <h3 className="font-serif text-xl text-primary group-hover:text-accent transition-colors mb-2">{article.title}</h3>
+                        <p className="text-primary/70 text-sm mb-4 line-clamp-2">{article.excerpt}</p>
+                        <span className="text-primary/50 text-sm flex items-center gap-1">
+                          <Clock className="w-4 h-4" /> {article.readTime}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button 
+                          onClick={(e) => toggleSaveArticle(e, article.title)}
+                          className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all ${savedResourceIds.includes(article.title) ? 'bg-accent/10 border-accent/20 text-accent' : 'bg-surface border-primary/10 text-primary/40 hover:text-accent'}`}
+                        >
+                          <Bookmark className={`w-5 h-5 ${savedResourceIds.includes(article.title) ? 'fill-accent' : ''}`} />
+                        </button>
+                        <div className="w-10 h-10 rounded-full bg-surface border border-primary/10 flex items-center justify-center group-hover:bg-accent group-hover:border-accent group-hover:text-bg transition-all">
+                          <ChevronRight className="w-5 h-5" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12 bg-surface rounded-2xl border border-primary/10">
+                  <Search className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+                  <h3 className="text-xl font-serif text-primary mb-2">No Resources Found</h3>
+                  <p className="text-primary/60">We couldn't find any articles matching your search criteria.</p>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory('All');
+                    }}
+                    className="mt-6 text-accent font-medium hover:text-accent-light transition-colors"
+                  >
+                    Clear Search Filters
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            {visibleCount < filteredArticles.length && (
+              <div className="mt-10 text-center">
+                <button 
+                  onClick={() => setVisibleCount(prev => Math.min(prev + 6, filteredArticles.length))}
+                  className="bg-primary/5 text-primary px-8 py-3 rounded-full text-sm font-medium hover:bg-primary/10 transition-colors inline-flex items-center gap-2"
+                >
+                  Load More Articles <span className="text-primary/50">({filteredArticles.length - visibleCount} remaining)</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Article Modal */}
+      <AnimatePresence>
+        {selectedArticle && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+          >
+            <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm" onClick={() => setSelectedArticle(null)}></div>
+            <motion.div 
+              initial={{ y: 50, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className="bg-bg w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative z-10"
+              onScroll={handleScroll}
+              ref={scrollRef}
+            >
+              <div className="sticky top-0 bg-bg/90 backdrop-blur-md border-b border-primary/10 p-4 sm:p-6 flex justify-between items-center z-20">
+                <span className="text-accent text-xs font-bold uppercase tracking-wider">{selectedArticle.category}</span>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={(e) => toggleSaveArticle(e, selectedArticle.title)}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${savedResourceIds.includes(selectedArticle.title) ? 'bg-accent/10 text-accent' : 'bg-primary/5 hover:bg-primary/10 text-primary'}`}
+                  >
+                    <Bookmark className={`w-5 h-5 ${savedResourceIds.includes(selectedArticle.title) ? 'fill-accent' : ''}`} />
+                  </button>
+                  <button 
+                    onClick={() => setSelectedArticle(null)}
+                    className="w-10 h-10 rounded-full bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                {/* Scroll Progress Bar */}
+                <div className="absolute bottom-0 left-0 h-0.5 bg-accent origin-left" style={{ width: `${scrollProgress}%` }} />
+              </div>
+              <div className="p-6 sm:p-10">
+                <h2 className="font-serif text-3xl sm:text-4xl text-primary mb-4 leading-tight">{selectedArticle.title}</h2>
+                <div className="flex items-center gap-4 text-primary/50 text-sm mb-10 pb-10 border-b border-primary/10">
+                  <span className="flex items-center gap-1"><Clock className="w-4 h-4" /> {selectedArticle.readTime}</span>
+                  <span>•</span>
+                  <span>Mawaddah Editorial</span>
+                </div>
+                <div 
+                  className="prose prose-lg prose-p:text-primary/80 prose-headings:text-primary max-w-none leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: selectedArticle.content }}
+                />
+                
+                <AnimatePresence>
+                  {hasFinishedReading && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-12 p-6 bg-accent/5 border border-accent/20 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-accent text-bg flex items-center justify-center shrink-0">
+                          <CheckCircle2 className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h4 className="font-serif text-lg text-primary mb-1">Jazakallah Khair for reading</h4>
+                          <p className="text-primary/70 text-sm">We hope you found this article beneficial. Consider sharing it with someone who might need it.</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary/50 mr-2">Share:</span>
+                        <a 
+                          href={`https://wa.me/?text=${encodeURIComponent(`Read this beneficial article: ${selectedArticle.title} - ${window.location.href}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 rounded-full bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white flex items-center justify-center transition-colors"
+                          aria-label="Share on WhatsApp"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </a>
+                        <a 
+                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 rounded-full bg-[#1877F2]/10 text-[#1877F2] hover:bg-[#1877F2] hover:text-white flex items-center justify-center transition-colors"
+                          aria-label="Share on Facebook"
+                        >
+                          <Facebook className="w-4 h-4" />
+                        </a>
+                        <a 
+                          href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Read this beneficial article: ${selectedArticle.title}`)}&url=${encodeURIComponent(window.location.href)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-10 h-10 rounded-full bg-[#1DA1F2]/10 text-[#1DA1F2] hover:bg-[#1DA1F2] hover:text-white flex items-center justify-center transition-colors"
+                          aria-label="Share on Twitter"
+                        >
+                          <Twitter className="w-4 h-4" />
+                        </a>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+};
+
+const Testimonials = () => {
+  const testimonials = [
+    {
+      name: "Aisha",
+      context: "Pre-Marital Guidance",
+      quote: "The pre-marital sessions completely shifted our perspective. We learned how to communicate our expectations clearly and align our goals with the Sunnah. Truly invaluable."
+    },
+    {
+      name: "Omar & Fatima",
+      context: "Couple Therapy",
+      quote: "We were struggling to find common ground after 5 years of marriage. The guidance we received helped us rebuild our connection with patience and Islamic wisdom."
+    },
+    {
+      name: "Zainab",
+      context: "Parenting Guidance",
+      quote: "Raising kids in the modern world is challenging. The Tarbiyah strategies I learned here gave me practical tools to instill Islamic values in my children with love."
+    }
+  ];
+
+  return (
+    <section className="py-24 bg-bg">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Alhamdulillah</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-primary">Stories of Growth</h2>
+        </motion.div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {testimonials.map((t, idx) => (
+            <motion.div 
+              key={idx}
+              initial={{ opacity: 0, y: 40, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, margin: "-50px" }}
+              transition={{ duration: 0.7, delay: idx * 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+              className="bg-surface p-8 rounded-3xl border border-primary/5 shadow-sm relative group hover:shadow-md transition-shadow"
+            >
+              <Quote className="w-10 h-10 text-accent/20 absolute top-6 right-6 group-hover:text-accent/40 transition-colors duration-500" />
+              <div className="flex gap-1 mb-6">
+                {[...Array(5)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (idx * 0.2) + (i * 0.1) + 0.3, duration: 0.4 }}
+                  >
+                    <Star className="w-4 h-4 fill-accent text-accent" />
+                  </motion.div>
+                ))}
+              </div>
+              <p className="text-primary/80 italic mb-6 leading-relaxed">"{t.quote}"</p>
+              <div>
+                <h4 className="font-serif text-lg text-primary font-medium">{t.name}</h4>
+                <span className="text-accent text-sm">{t.context}</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const FAQ = () => {
+  const faqs = [
+    {
+      question: "Are the consultations strictly confidential?",
+      answer: "Yes, absolutely. All our consultations, whether in-person, over the phone, or via video, are strictly confidential. We adhere to professional ethical guidelines and Islamic principles of privacy (Amanah)."
+    },
+    {
+      question: "What happens if I need to cancel or reschedule?",
+      answer: "We understand that unexpected things happen. You can reschedule or cancel your appointment up to 24 hours in advance without any penalty. Please contact us as soon as possible if you need to make changes."
+    },
+    {
+      question: "Are the workshops recorded for later viewing?",
+      answer: "Most of our online masterclasses and workshops are recorded and made available to registered participants for a limited time. However, interactive support groups and certain sensitive sessions are not recorded to protect privacy."
+    },
+    {
+      question: "Do you offer guidance for non-Muslims?",
+      answer: "While our services are rooted in Islamic principles and primarily cater to the Muslim community, we welcome individuals of all backgrounds who are open to receiving guidance based on these values."
+    },
+    {
+      question: "How do I join a video consultation?",
+      answer: "Once your booking is confirmed, you will receive an email with a secure, unique video link. Simply click the link 5 minutes before your scheduled time to join the session."
+    }
+  ];
+
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  return (
+    <section className="py-24 bg-surface">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <span className="text-accent font-medium tracking-widest uppercase text-sm mb-2 block">Clarifications</span>
+          <h2 className="font-serif text-4xl md:text-5xl text-primary">Frequently Asked Questions</h2>
+        </div>
+        
+        <div className="space-y-4">
+          {faqs.map((faq, index) => (
+            <div 
+              key={index} 
+              className="border border-primary/10 rounded-2xl overflow-hidden bg-bg transition-all duration-300 hover:border-accent/30"
+            >
+              <button
+                onClick={() => toggleFAQ(index)}
+                className="w-full flex justify-between items-center p-6 text-left focus:outline-none"
+              >
+                <span className="font-serif text-lg text-primary font-medium pr-4">{faq.question}</span>
+                <ChevronDown 
+                  className={`w-5 h-5 text-accent flex-shrink-0 transition-transform duration-300 ${openIndex === index ? 'rotate-180' : ''}`} 
+                />
+              </button>
+              <AnimatePresence>
+                {openIndex === index && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <div className="px-6 pb-6 text-primary/70 leading-relaxed border-t border-primary/5 pt-4">
+                      {faq.answer}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Booking = ({ onOpenUserProfile }: { onOpenUserProfile: () => void }) => {
+  const [format, setFormat] = useState('Video Consultation');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    type: 'Pre-Marital Guidance',
+    date: '',
+    time: '',
+    description: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+
+  useEffect(() => {
+    const handlePrefill = (e: any) => {
+      setFormData(prev => ({
+        ...prev,
+        type: e.detail.type || prev.type,
+        description: e.detail.description || prev.description,
+        date: e.detail.date || prev.date,
+        time: e.detail.time || prev.time
+      }));
+    };
+    window.addEventListener('prefill-booking', handlePrefill);
+    return () => window.removeEventListener('prefill-booking', handlePrefill);
+  }, []);
+
+  const handleInitialSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsPaymentOpen(true);
+  };
+
+  const executeBooking = async () => {
+    setIsSubmitting(true);
+    setIsPaymentOpen(false);
+    try {
+      const res = await fetch('/api/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, format })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setIsSuccess(true);
+        if (data.previewUrl) {
+          setPreviewUrl(data.previewUrl);
+        }
+        
+        // Save to localStorage
+        const stored = localStorage.getItem('mawaddah_bookings');
+        const bookings = stored ? JSON.parse(stored) : [];
+        const newBooking = {
+          id: Math.random().toString(36).substring(2, 9),
+          type: formData.type,
+          format: format,
+          date: formData.date,
+          time: formData.time,
+          description: formData.description,
+          status: 'upcoming',
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('mawaddah_bookings', JSON.stringify([...bookings, newBooking]));
+        
+      } else {
+        alert(data.error || 'Failed to book consultation. Please try again.');
+      }
+    } catch (error) {
+      console.error(error);
+      alert('An error occurred while booking.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <section id="booking" className="py-24 bg-primary text-surface relative overflow-hidden">
+      <div className="absolute inset-0 opacity-5">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="islamic-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M20 0L40 20L20 40L0 20Z" fill="none" stroke="currentColor" strokeWidth="1"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#islamic-pattern)"/>
+        </svg>
+      </div>
+      
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="bg-surface text-primary rounded-3xl p-8 md:p-12 shadow-2xl relative">
+          <div className="text-center mb-10">
+            <h2 className="font-serif text-3xl md:text-4xl mb-4">Book a 1:1 Consultation</h2>
+            <p className="text-primary/70">Schedule a private, confidential session.</p>
+          </div>
+          
+          <form className="space-y-6" onSubmit={handleInitialSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Full Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg" 
+                  placeholder="Your name" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Email Address</label>
+                <input 
+                  type="email" 
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg" 
+                  placeholder="you@example.com" 
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Consultation Type</label>
+                <select 
+                  value={formData.type}
+                  onChange={(e) => setFormData({...formData, type: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg appearance-none"
+                >
+                  <option>Pre-Marital Guidance</option>
+                  <option>Couple Therapy</option>
+                  <option>Parenting Guidance</option>
+                  <option>General Mashwara</option>
+                  <option>Workshop Registration</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Format</label>
+                <select 
+                  value={format}
+                  onChange={(e) => setFormat(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg appearance-none"
+                >
+                  <option value="Video Consultation">Video Consultation</option>
+                  <option value="In-Person (Local Office)">In-Person (Local Office)</option>
+                  <option value="Phone Call">Phone Call</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Preferred Date</label>
+                <input 
+                  type="date" 
+                  required
+                  value={formData.date}
+                  onChange={(e) => setFormData({...formData, date: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Preferred Time</label>
+                <input 
+                  type="time" 
+                  required
+                  value={formData.time}
+                  onChange={(e) => setFormData({...formData, time: e.target.value})}
+                  className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg" 
+                />
+              </div>
+            </div>
+
+            <div className="bg-primary/5 border border-primary/10 rounded-xl p-4 flex justify-between items-center">
+              <div>
+                <h4 className="font-medium text-primary text-sm uppercase tracking-wide">Estimated Cost</h4>
+                <p className="text-primary/60 text-xs mt-1">Based on a standard 1-hour session. (Workshop prices vary)</p>
+              </div>
+              <div className="text-2xl font-bold text-accent">
+                {formData.type === 'Workshop Registration' ? "Varies" : "€20/hr"}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Briefly describe your situation</label>
+              <textarea 
+                rows={4} 
+                required
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-bg resize-none" 
+                placeholder="How can we help you?"
+              ></textarea>
+            </div>
+            
+            <button 
+              type="submit" 
+              disabled={isSubmitting}
+              className="w-full bg-accent text-bg py-4 rounded-xl font-medium text-lg hover:bg-[#A88B63] hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-accent"
+            >
+              {isSubmitting ? 'Processing...' : <><Calendar className="w-5 h-5" /> Schedule Appointment</>}
+            </button>
+            
+            <AnimatePresence mode="wait">
+              {isSuccess && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="bg-green-50 text-green-800 p-6 rounded-xl mt-4 border border-green-200"
+                >
+                  <div className="flex items-start gap-4">
+                    <CheckCircle2 className="w-6 h-6 text-green-600 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="font-bold text-lg mb-1 shadow-none">Alhamdulillah! Your booking request has been received.</h4>
+                      <p className="text-sm opacity-90 mb-4">A confirmation email has been sent to {formData.email}. We look forward to speaking with you.</p>
+                      <div className="flex flex-wrap gap-3">
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onOpenUserProfile();
+                            document.querySelector('nav')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="bg-green-600 text-bg px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+                        >
+                          View in Dashboard
+                        </button>
+                        {previewUrl && (
+                          <a href={previewUrl} target="_blank" rel="noreferrer" className="bg-bg text-green-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors border border-green-200">
+                            Preview Email
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            <AnimatePresence mode="wait">
+              {format === 'Video Consultation' && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-primary/5 p-4 rounded-xl flex items-start gap-3 mt-4 overflow-hidden"
+                >
+                  <Video className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                  <p className="text-xs text-primary/70 leading-relaxed">
+                    <strong>Video Consultation:</strong> A secure video conferencing link will be automatically generated and emailed to you upon confirmation. All sessions are strictly confidential.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
+
+          <AnimatePresence>
+            {isPaymentOpen && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-surface rounded-3xl"
+              >
+                <div className="w-full max-w-md bg-bg p-8 rounded-2xl shadow-xl border border-primary/10">
+                  <h3 className="text-2xl font-serif text-primary mb-2 text-center">Secure Payment</h3>
+                  <p className="text-center text-primary/60 text-sm mb-6">Complete your booking securely via Stripe.</p>
+                  
+                  <div className="space-y-4 mb-8">
+                    <div className="flex justify-between items-center py-3 border-b border-primary/10">
+                      <span className="text-primary/70">Consultation Fee</span>
+                      <span className="font-bold text-accent">
+                        {formData.type === 'Workshop Registration' ? "Varies" : "€20/hr"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <form onSubmit={(e) => { e.preventDefault(); executeBooking(); }} className="space-y-4">
+                    <div>
+                      <label className="block text-xs uppercase tracking-wide text-primary/70 mb-1">Card Details (Simulation)</label>
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          placeholder="0000 0000 0000 0000" 
+                          required
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono"
+                          maxLength={19}
+                        />
+                        <div className="absolute right-3 top-3 flex gap-1">
+                          <div className="w-8 h-5 bg-red-400/20 rounded"></div>
+                          <div className="w-8 h-5 bg-yellow-400/20 rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <input type="text" placeholder="MM/YY" required className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono" maxLength={5} />
+                      </div>
+                      <div>
+                        <input type="text" placeholder="CVC" required className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent bg-surface font-mono" maxLength={4} />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-4">
+                      <button 
+                        type="button" 
+                        onClick={() => setIsPaymentOpen(false)}
+                        className="flex-1 py-3 rounded-xl font-bold text-primary border border-primary/20 hover:bg-primary/5 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="flex-1 bg-accent text-bg py-3 rounded-xl font-bold hover:bg-[#A88B63] transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                      >
+                        {isSubmitting ? 'Processing...' : <><Lock className="w-4 h-4" /> Pay & Book</>}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Newsletter = () => {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus('submitting');
+    
+    // Simulate API call and store in local storage
+    setTimeout(() => {
+      const storedSubscribers = localStorage.getItem('mawaddah_newsletter') || '[]';
+      const subscribers = JSON.parse(storedSubscribers);
+      
+      if (!subscribers.includes(email)) {
+        subscribers.push(email);
+        localStorage.setItem('mawaddah_newsletter', JSON.stringify(subscribers));
+      }
+      
+      setStatus('success');
+      setEmail('');
+      
+      // Reset status after a few seconds
+      setTimeout(() => {
+        setStatus('idle');
+      }, 5000);
+    }, 800);
+  };
+
+  return (
+    <section className="py-20 bg-primary text-bg">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h2 className="font-serif text-3xl md:text-4xl mb-4 text-bg">Subscribe to Our Newsletter</h2>
+        <p className="text-bg/80 mb-8 max-w-2xl mx-auto">
+          Receive weekly insights on Islamic parenting, pre-marital guidance, and spiritual wellness directly in your inbox.
+        </p>
+        
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto relative">
+          {status === 'success' ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-accent/20 border border-accent/40 text-accent-light p-4 rounded-xl flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="font-medium">JazakAllah Khair! You have been subscribed.</span>
+            </motion.div>
+          ) : (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="flex-1 px-4 py-3 rounded-xl border border-primary-light bg-primary-light/50 text-bg placeholder-bg/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                disabled={status === 'submitting'}
+              />
+              <button
+                type="submit"
+                disabled={status === 'submitting'}
+                className="bg-accent text-bg px-6 py-3 rounded-xl font-medium hover:bg-accent-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                {status === 'submitting' ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </div>
+          )}
+        </form>
+      </div>
+    </section>
+  );
+};
+
+const Footer = () => {
+  return (
+    <footer className="bg-bg py-12 border-t border-primary/10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2">
+            <HeartHandshake className="h-6 w-6 text-cyan-500" />
+            <span className="font-serif text-xl font-semibold text-red-500">Mawaddah</span>
+          </div>
+          <div className="flex gap-6 text-sm text-primary/70">
+            <a href="#" className="hover:text-accent transition-colors">Privacy Policy</a>
+            <a href="#" className="hover:text-accent transition-colors">Terms of Service</a>
+            <a href="#" className="hover:text-accent transition-colors">Contact</a>
+          </div>
+          <p className="text-sm text-primary/50">
+            © {new Date().getFullYear()} Mawaddah Consultancy. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+};
+
+export type BookingRecord = {
+  id: string;
+  type: string;
+  format: string;
+  date: string;
+  time: string;
+  description: string;
+  status: 'upcoming' | 'past';
+  createdAt: string;
+};
+
+export type UserProfile = {
+  name: string;
+  email: string;
+  phone: string;
+  location: string;
+  bio: string;
+};
+
+const UserProfileModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [activeTab, setActiveTab] = useState<'profile' | 'consultations' | 'workshops' | 'resources' | 'security'>('profile');
+  const [profile, setProfile] = useState<UserProfile>({
+    name: 'Abdullah Example',
+    email: 'abdullah@example.com',
+    phone: '',
+    location: '',
+    bio: ''
+  });
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [savedResourceIds, setSavedResourceIds] = useState<string[]>([]);
+  
+  // 2FA State
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [isSettingUp2FA, setIsSettingUp2FA] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationError, setVerificationError] = useState('');
+
+  const loadSavedResources = () => {
+    const stored = localStorage.getItem('mawaddah_saved_resources');
+    if (stored) {
+      setSavedResourceIds(JSON.parse(stored));
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      const storedBookings = localStorage.getItem('mawaddah_bookings');
+      if (storedBookings) {
+        setBookings(JSON.parse(storedBookings));
+      }
+      const storedProfile = localStorage.getItem('mawaddah_profile');
+      if (storedProfile) {
+        setProfile(JSON.parse(storedProfile));
+      }
+      const stored2FA = localStorage.getItem('mawaddah_2fa');
+      if (stored2FA === 'enabled') {
+        setIs2FAEnabled(true);
+      }
+      loadSavedResources();
+    }
+  }, [isOpen, activeTab]);
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      loadSavedResources();
+    };
+    window.addEventListener('mawaddah_saved_resources_changed', handleStorageChange);
+    return () => window.removeEventListener('mawaddah_saved_resources_changed', handleStorageChange);
+  }, []);
+
+  const handleSaveProfile = () => {
+    localStorage.setItem('mawaddah_profile', JSON.stringify(profile));
+    setIsEditingProfile(false);
+  };
+
+  const handleEnable2FA = () => {
+    setIsSettingUp2FA(true);
+    setVerificationCode('');
+    setVerificationError('');
+  };
+
+  const handleVerify2FA = () => {
+    if (verificationCode.length === 6) {
+      setIs2FAEnabled(true);
+      setIsSettingUp2FA(false);
+      localStorage.setItem('mawaddah_2fa', 'enabled');
+    } else {
+      setVerificationError('Please enter a valid 6-digit code.');
+    }
+  };
+
+  const handleDisable2FA = () => {
+    setIs2FAEnabled(false);
+    localStorage.removeItem('mawaddah_2fa');
+  };
+
+  const calculateProfileCompletion = () => {
+    let completed = 0;
+    const total = 5;
+    if (profile.name?.trim()) completed++;
+    if (profile.email?.trim()) completed++;
+    if (profile.phone?.trim()) completed++;
+    if (profile.location?.trim()) completed++;
+    if (profile.bio?.trim()) completed++;
+    return Math.round((completed / total) * 100);
+  };
+
+  const profileCompletion = calculateProfileCompletion();
+
+  const consultations = bookings.filter(b => b.type !== 'Workshop Registration');
+  const workshops = bookings.filter(b => b.type === 'Workshop Registration');
+
+  const upcomingConsultations = consultations.filter(b => b.status === 'upcoming').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const pastConsultations = consultations.filter(b => b.status === 'past').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const upcomingWorkshops = workshops.filter(b => b.status === 'upcoming').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const pastWorkshops = workshops.filter(b => b.status === 'past').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const savedArticles = articles.filter(a => savedResourceIds.includes(a.title));
+
+  const renderBookingsList = (upcoming: BookingRecord[], past: BookingRecord[], emptyMessage: string) => {
+    if (upcoming.length === 0 && past.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <Calendar className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+          <h3 className="text-xl font-serif text-primary mb-2">No Records Found</h3>
+          <p className="text-primary/60">{emptyMessage}</p>
+          <button 
+            onClick={() => {
+              onClose();
+              document.getElementById('booking')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="mt-6 bg-accent text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-light transition-colors inline-block"
+          >
+            Book Now
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-10">
+        {upcoming.length > 0 && (
+          <div>
+            <h3 className="font-serif text-xl text-primary mb-4 flex items-center gap-2">
+              <CalendarDays className="w-5 h-5 text-accent" /> Upcoming
+            </h3>
+            <div className="space-y-4">
+              {upcoming.map(booking => (
+                <div key={booking.id} className="bg-surface border border-primary/10 rounded-2xl p-5 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-accent mb-1 block">{booking.type}</span>
+                    <h4 className="font-serif text-lg text-primary mb-1">{format(new Date(booking.date), 'MMMM d, yyyy')} at {booking.time}</h4>
+                    <p className="text-sm text-primary/70 flex items-center gap-1 mb-2">
+                      {booking.format === 'Video Consultation' ? <Video className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                      {booking.format}
+                    </p>
+                    {booking.description && (
+                      <p className="text-sm text-primary/80 italic line-clamp-2">"{booking.description}"</p>
+                    )}
+                  </div>
+                  <div className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Confirmed
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {past.length > 0 && (
+          <div>
+            <h3 className="font-serif text-xl text-primary mb-4 flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-primary/40" /> Past
+            </h3>
+            <div className="space-y-4">
+              {past.map(booking => (
+                <div key={booking.id} className="bg-surface/50 border border-primary/5 rounded-2xl p-5 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center opacity-70">
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-primary/50 mb-1 block">{booking.type}</span>
+                    <h4 className="font-serif text-lg text-primary mb-1">{format(new Date(booking.date), 'MMMM d, yyyy')} at {booking.time}</h4>
+                    <p className="text-sm text-primary/60 flex items-center gap-1 mb-2">
+                      {booking.format === 'Video Consultation' ? <Video className="w-3.5 h-3.5" /> : <Phone className="w-3.5 h-3.5" />}
+                      {booking.format}
+                    </p>
+                    {booking.description && (
+                      <p className="text-sm text-primary/60 italic line-clamp-2">"{booking.description}"</p>
+                    )}
+                  </div>
+                  <div className="bg-primary/10 text-primary/60 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                    Completed
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+        >
+          <div className="absolute inset-0 bg-primary/80 backdrop-blur-sm" onClick={onClose}></div>
+          <motion.div 
+            initial={{ y: 50, opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 20, opacity: 0, scale: 0.95 }}
+            className="bg-bg w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl relative z-10 flex flex-col md:flex-row"
+          >
+            {/* Sidebar */}
+            <div className="w-full md:w-64 bg-surface border-r border-primary/10 p-6 flex flex-col gap-2 shrink-0">
+              <div className="flex justify-between items-center md:hidden mb-4">
+                <h2 className="font-serif text-2xl text-primary">User Dashboard</h2>
+                <button 
+                  onClick={onClose}
+                  className="w-10 h-10 rounded-full bg-primary/5 hover:bg-primary/10 flex items-center justify-center text-primary transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="hidden md:block mb-6">
+                <h2 className="font-serif text-2xl text-primary">User Dashboard</h2>
+              </div>
+
+              {/* Profile Completion */}
+              <div className="mb-6 px-2">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-primary/70">Profile Completion</span>
+                  <span className="text-xs font-bold text-accent">{profileCompletion}%</span>
+                </div>
+                <div className="w-full bg-primary/10 rounded-full h-1.5 mb-1 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${profileCompletion}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="bg-accent h-1.5 rounded-full"
+                  ></motion.div>
+                </div>
+                {profileCompletion < 100 && (
+                  <p className="text-[10px] text-primary/50">Complete your profile to get the most out of Mawaddah.</p>
+                )}
+              </div>
+
+              <button 
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'profile' ? 'bg-accent text-bg' : 'text-primary/70 hover:bg-primary/5'}`}
+              >
+                <Users className="w-5 h-5" /> Personal Info
+              </button>
+              <button 
+                onClick={() => setActiveTab('consultations')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'consultations' ? 'bg-accent text-bg' : 'text-primary/70 hover:bg-primary/5'}`}
+              >
+                <Phone className="w-5 h-5" /> Consultations
+              </button>
+              <button 
+                onClick={() => setActiveTab('workshops')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'workshops' ? 'bg-accent text-bg' : 'text-primary/70 hover:bg-primary/5'}`}
+              >
+                <BookOpen className="w-5 h-5" /> Workshops
+              </button>
+              <button 
+                onClick={() => setActiveTab('resources')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'resources' ? 'bg-accent text-bg' : 'text-primary/70 hover:bg-primary/5'}`}
+              >
+                <Bookmark className="w-5 h-5" /> Saved Resources
+              </button>
+              <button 
+                onClick={() => setActiveTab('security')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'security' ? 'bg-accent text-bg' : 'text-primary/70 hover:bg-primary/5'}`}
+              >
+                <ShieldCheck className="w-5 h-5" /> Security
+              </button>
+            </div>
+
+            {/* Main Content */}
+            <div className="flex-1 p-6 sm:p-10 relative">
+              <button 
+                onClick={onClose}
+                className="absolute top-6 right-6 w-10 h-10 rounded-full bg-primary/5 hover:bg-primary/10 hidden md:flex items-center justify-center text-primary transition-colors z-20"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {activeTab === 'profile' && (
+                <div className="max-w-xl">
+                  <div className="flex justify-between items-center mb-8">
+                    <h3 className="font-serif text-2xl text-primary">Personal Information</h3>
+                    {!isEditingProfile && (
+                      <button 
+                        onClick={() => setIsEditingProfile(true)}
+                        className="text-accent text-sm font-bold uppercase tracking-wider hover:text-accent-light transition-colors"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+
+                  {isEditingProfile ? (
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Full Name</label>
+                        <input 
+                          type="text" 
+                          value={profile.name}
+                          onChange={(e) => setProfile({...profile, name: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Email Address</label>
+                        <input 
+                          type="email" 
+                          value={profile.email}
+                          onChange={(e) => setProfile({...profile, email: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Phone Number</label>
+                        <input 
+                          type="tel" 
+                          value={profile.phone}
+                          onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Location</label>
+                        <input 
+                          type="text" 
+                          value={profile.location}
+                          onChange={(e) => setProfile({...profile, location: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-primary/80 mb-2 uppercase tracking-wide text-xs">Bio / Notes</label>
+                        <textarea 
+                          rows={4}
+                          value={profile.bio}
+                          onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                          className="w-full px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface resize-none" 
+                        />
+                      </div>
+                      <div className="flex gap-4 pt-4">
+                        <button 
+                          onClick={() => setIsEditingProfile(false)}
+                          className="px-6 py-2.5 rounded-full text-sm font-medium text-primary border border-primary/20 hover:bg-primary/5 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          onClick={handleSaveProfile}
+                          className="bg-accent text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-light transition-colors"
+                        >
+                          Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      <div className="flex items-center gap-6">
+                        <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl text-primary font-serif">
+                          {profile.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h4 className="font-serif text-2xl text-primary mb-1">{profile.name}</h4>
+                          <p className="text-primary/60">{profile.email}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8 border-t border-primary/10">
+                        <div>
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary/50 mb-1 block">Phone</span>
+                          <p className="text-primary">{profile.phone || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary/50 mb-1 block">Location</span>
+                          <p className="text-primary">{profile.location || 'Not provided'}</p>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary/50 mb-1 block">Bio / Notes</span>
+                          <p className="text-primary">{profile.bio || 'No bio provided.'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'consultations' && (
+                <div>
+                  <h3 className="font-serif text-2xl text-primary mb-8">Consultation History</h3>
+                  {renderBookingsList(upcomingConsultations, pastConsultations, "You haven't booked any consultations yet.")}
+                </div>
+              )}
+
+              {activeTab === 'workshops' && (
+                <div>
+                  <h3 className="font-serif text-2xl text-primary mb-8">Workshop Enrollments</h3>
+                  {renderBookingsList(upcomingWorkshops, pastWorkshops, "You haven't enrolled in any workshops yet.")}
+                </div>
+              )}
+
+              {activeTab === 'resources' && (
+                <div>
+                  <h3 className="font-serif text-2xl text-primary mb-8">Saved Resources</h3>
+                  {savedArticles.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Bookmark className="w-12 h-12 text-primary/20 mx-auto mb-4" />
+                      <h3 className="text-xl font-serif text-primary mb-2">No Saved Resources</h3>
+                      <p className="text-primary/60">You haven't saved any articles yet.</p>
+                      <button 
+                        onClick={() => {
+                          onClose();
+                          document.getElementById('resources')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="mt-6 bg-accent text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-light transition-colors inline-block"
+                      >
+                        Explore Knowledge Hub
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {savedArticles.map((article, idx) => (
+                        <div 
+                          key={idx} 
+                          className="group block p-5 rounded-2xl border border-primary/10 bg-surface hover:border-accent/50 transition-all cursor-pointer shadow-sm hover:shadow-md relative"
+                          onClick={() => {
+                            onClose();
+                            document.getElementById('resources')?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                        >
+                          <span className="text-accent text-xs font-bold uppercase tracking-wider mb-2 block">{article.category}</span>
+                          <h4 className="font-serif text-lg text-primary group-hover:text-accent transition-colors mb-2 line-clamp-2">{article.title}</h4>
+                          <span className="text-primary/50 text-xs flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> {article.readTime}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'security' && (
+                <div className="max-w-xl">
+                  <h3 className="font-serif text-2xl text-primary mb-8">Security Settings</h3>
+                  
+                  <div className="bg-surface border border-primary/10 rounded-2xl p-6 sm:p-8">
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${is2FAEnabled ? 'bg-green-100 text-green-600' : 'bg-primary/5 text-primary/60'}`}>
+                        {is2FAEnabled ? <ShieldCheck className="w-6 h-6" /> : <Shield className="w-6 h-6" />}
+                      </div>
+                      <div>
+                        <h4 className="font-serif text-xl text-primary mb-2">Two-Factor Authentication (2FA)</h4>
+                        <p className="text-primary/70 text-sm leading-relaxed">
+                          Add an extra layer of security to your account. Once enabled, you'll be required to enter both your password and an authentication code from your mobile device when signing in.
+                        </p>
+                      </div>
+                    </div>
+
+                    {is2FAEnabled ? (
+                      <div className="border-t border-primary/10 pt-6 mt-6">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-green-600 flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4" /> 2FA is currently enabled
+                          </span>
+                          <button 
+                            onClick={handleDisable2FA}
+                            className="px-4 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-500/10 transition-colors"
+                          >
+                            Disable 2FA
+                          </button>
+                        </div>
+                      </div>
+                    ) : isSettingUp2FA ? (
+                      <div className="border-t border-primary/10 pt-6 mt-6 space-y-6">
+                        <div className="bg-primary/5 p-4 rounded-xl text-sm text-primary/80">
+                          <p className="font-medium mb-2">Step 1: Scan the QR Code</p>
+                          <p>Open your authenticator app (like Google Authenticator or Authy) and scan the QR code below.</p>
+                        </div>
+                        
+                        <div className="flex justify-center py-4">
+                          <div className="w-48 h-48 bg-white border-2 border-primary/20 rounded-xl flex items-center justify-center p-4">
+                            {/* Simulated QR Code */}
+                            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNMTAgMTBoMjB2MjBIMTB6bTQwIDBoMjB2MjBINTB6bTQwIDBoMjB2MjBIOTB6TTEwIDQwaDIwdjIwSDEwem00MCAwaDIwdjIwSDUwem00MCAwaDIwdjIwSDkwek0xMCA3MGgyMHYyMEgxMHptNDAgMGgyMHYyMEg1MHptNDAgMGgyMHYyMEg5MHoiIGZpbGw9IiMyQzNFMkQiIG9wYWNpdHk9IjAuOCIvPjwvc3ZnPg==')] bg-cover opacity-50"></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-primary/5 p-4 rounded-xl text-sm text-primary/80">
+                          <p className="font-medium mb-2">Step 2: Enter Verification Code</p>
+                          <p className="mb-4">Enter the 6-digit code generated by your authenticator app.</p>
+                          
+                          <div className="flex flex-col gap-2">
+                            <input 
+                              type="text" 
+                              maxLength={6}
+                              placeholder="000000"
+                              value={verificationCode}
+                              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                              className="w-full max-w-[200px] px-4 py-3 rounded-xl border border-primary/20 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent bg-surface text-center text-xl tracking-[0.5em] font-mono" 
+                            />
+                            {verificationError && <p className="text-red-500 text-xs mt-1">{verificationError}</p>}
+                          </div>
+                        </div>
+
+                        <div className="flex gap-4 pt-2">
+                          <button 
+                            onClick={() => setIsSettingUp2FA(false)}
+                            className="px-6 py-2.5 rounded-full text-sm font-medium text-primary border border-primary/20 hover:bg-primary/5 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            onClick={handleVerify2FA}
+                            className="bg-accent text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-accent-light transition-colors"
+                          >
+                            Verify & Enable
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-primary/10 pt-6 mt-6">
+                        <button 
+                          onClick={handleEnable2FA}
+                          className="bg-primary text-bg px-6 py-2.5 rounded-full text-sm font-medium hover:bg-primary-light transition-colors"
+                        >
+                          Set Up 2FA
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default function App() {
+  const [isUserProfileOpen, setIsUserProfileOpen] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('mawaddah_bookings');
+    if (!stored) {
+      const mockBookings: BookingRecord[] = [
+        {
+          id: 'mock-1',
+          type: 'General Mashwara',
+          format: 'Video Consultation',
+          date: format(addMonths(new Date(), 1), 'yyyy-MM-dd'),
+          time: '14:00',
+          description: 'I would like to book a 1:1 consultation.',
+          status: 'upcoming',
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: 'mock-2',
+          type: 'Pre-Marital Guidance',
+          format: 'In-Person (Local Office)',
+          date: format(subMonths(new Date(), 2), 'yyyy-MM-dd'),
+          time: '10:30',
+          description: 'Initial consultation before our Nikah.',
+          status: 'past',
+          createdAt: subMonths(new Date(), 3).toISOString()
+        }
+      ];
+      localStorage.setItem('mawaddah_bookings', JSON.stringify(mockBookings));
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-bg selection:bg-accent/30 pb-20 md:pb-0">
+      <Navbar onOpenUserProfile={() => setIsUserProfileOpen(true)} />
+      <main>
+        <Hero />
+        <QuranicQuote />
+        <AboutUs />
+        <Services />
+        <IslamicAdvice />
+        <Workshops />
+        <Resources />
+        <Testimonials />
+        <FAQ />
+        <Booking onOpenUserProfile={() => setIsUserProfileOpen(true)} />
+      </main>
+      <Newsletter />
+      <Footer />
+      <UserProfileModal isOpen={isUserProfileOpen} onClose={() => setIsUserProfileOpen(false)} />
+    </div>
+  );
+}
